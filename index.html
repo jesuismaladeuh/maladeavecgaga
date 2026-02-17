@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Otome FLE - Docteur Gaga</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&family=Pacifico&display=swap');
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #fdf2f8;
+            overflow: hidden;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .game-container {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+            background-size: cover;
+            background-position: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end; 
+            transition: background-image 0.5s ease-in-out;
+        }
+
+        .hearts-container {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 1.2rem;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 8px 16px;
+            border-radius: 50px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            z-index: 50;
+        }
+
+        .dialogue-box {
+            width: 95%;
+            max-width: 800px;
+            background: transparent;
+            border: none;
+            border-radius: 0;
+            padding: 0 20px 20px 20px;
+            box-shadow: none;
+            min-height: 180px;
+            margin-bottom: 25px;
+            display: flex;
+            flex-direction: column;
+            z-index: 10;
+            backdrop-filter: none;
+        }
+
+        .choice-btn {
+            background: white;
+            border: 2px solid #f472b6;
+            color: #db2777;
+            padding: 12px 20px;
+            margin: 6px 0;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: left;
+            font-weight: 600;
+            font-size: 1rem;
+            opacity: 1 !important;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .choice-btn:hover {
+            background: #f472b6;
+            color: white;
+            transform: scale(1.02);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+        }
+
+        .next-btn {
+            background: #db2777;
+            color: white;
+            padding: 10px 25px;
+            margin-top: 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            text-align: center;
+            cursor: pointer;
+            align-self: flex-end;
+            transition: background 0.2s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+        }
+
+        .next-btn:hover {
+            background: #be185d;
+            transform: scale(1.05);
+        }
+
+        .input-name {
+            border: 3px solid #db2777;
+            padding: 12px;
+            outline: none;
+            font-size: 1.2rem;
+            text-align: center;
+            background: rgba(255, 255, 255, 0.9);
+            margin-bottom: 12px;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            width: 100%;
+        }
+
+        #dialogueText {
+            background-color: rgba(255, 255, 255, 0.85);
+            padding: 15px 20px;
+            border-radius: 20px;
+            font-size: 1.15rem;
+            line-height: 1.6;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border: 2px solid #fce7f3;
+        }
+
+        .screen {
+            display: none;
+            width: 100%;
+            height: 100%;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 20px;
+            background: rgba(253, 242, 248, 0.9);
+        }
+
+        .screen.active {
+            display: flex;
+        }
+        
+        .progress-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 8px;
+            background: linear-gradient(to right, #db2777, #f472b6);
+            transition: width 0.3s ease;
+            z-index: 100;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .typing-indicator span {
+            display: inline-block;
+            width: 6px;
+            height: 6px;
+            background-color: #db2777;
+            border-radius: 50%;
+            animation: typing 1s infinite ease-in-out;
+            margin: 0 2px;
+        }
+        .typing-indicator span:nth-child(1) { animation-delay: 0s; }
+        .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes typing {
+            0%, 100% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(1.5); opacity: 1; }
+        }
+        
+        .ai-explanation {
+            margin-top: 8px;
+            padding: 10px;
+            background: rgba(255,255,255,0.95);
+            border-left: 4px solid #7c3aed; /* Violet pour l'IA */
+            border-radius: 8px;
+            font-size: 0.9rem; /* Police plus petite */
+            color: #374151;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            line-height: 1.4; /* Lignes plus serrées */
+            max-height: 120px; /* Hauteur max pour éviter de dépasser */
+            overflow-y: auto; /* Scroll si nécessaire */
+        }
+        
+        .ai-explanation strong {
+            color: #db2777;
+        }
+    </style>
+</head>
+<body>
+
+<div class="game-container" id="mainContainer">
+    <div class="progress-bar" id="progressBar" style="width: 0%"></div>
+
+    <div id="ui-layer" class="hidden">
+        <div class="hearts-container" id="heartsDisplay">❤️❤️❤️❤️❤️</div>
+    </div>
+
+    <!-- Écran d'accueil -->
+    <div id="screen-intro" class="screen active flex flex-col items-center justify-center h-full text-center p-10 bg-pink-50">
+        <div class="bg-white p-8 rounded-3xl shadow-2xl max-w-md border-4 border-pink-400">
+            <h1 class="text-3xl font-bold text-pink-600 mb-4 font-serif">Docteur Gaga : Star Therapy</h1>
+            <p class="text-lg mb-8 text-gray-700">Bonjour ! Bienvenue chez Docteur Gaga. <br>Es-tu prêt pour ton examen ?</p>
+            <button onclick="startGame()" class="bg-pink-500 text-white px-10 py-3 rounded-full text-xl font-bold hover:bg-pink-600 transform hover:scale-105 transition shadow-lg">Entrer dans le cabinet</button>
+        </div>
+    </div>
+
+    <!-- Contenu du jeu -->
+    <div id="game-content" class="hidden flex flex-col items-center w-full">
+        <div class="dialogue-box">
+            <div id="dialogueText" class="text-lg mb-4 font-medium text-gray-800 leading-relaxed">...</div>
+            <div id="choicesContainer" class="flex flex-col"></div>
+        </div>
+    </div>
+
+    <!-- Écrans de Fin -->
+    <div id="screen-win" class="screen hidden flex flex-col items-center justify-center h-full text-center bg-green-50">
+        <div class="bg-white p-10 rounded-3xl shadow-2xl border-4 border-green-400">
+            <h1 class="text-5xl mb-4 font-bold text-green-600">🏆 APPLAUSE!</h1>
+            <p class="text-2xl mb-6">Félicitations ! Tu es en pleine forme. <br>You're a Little Monster now!</p>
+            <button onclick="location.reload()" class="bg-pink-500 text-white px-10 py-3 rounded-full font-bold">REJOUER</button>
+        </div>
+    </div>
+
+    <div id="screen-lose" class="screen hidden flex flex-col items-center justify-center h-full text-center bg-red-50">
+        <div class="bg-white p-10 rounded-3xl shadow-2xl border-4 border-red-500">
+            <h1 class="text-5xl mb-4 font-bold text-red-600">🚑 BAD ROMANCE</h1>
+            <p class="text-2xl mb-6">Oh non ! Tu es trop fatigué pour continuer.</p>
+            <button onclick="location.reload()" class="bg-gray-800 text-white px-10 py-3 rounded-full font-bold">RÉESSAYER</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const apiKey = ""; // La clé API sera injectée automatiquement par l'environnement
+    const GEN_MODEL = "gemini-2.5-flash-preview-09-2025";
+    const TTS_MODEL = "gemini-2.5-flash-preview-tts";
+
+    let userName = "";
+    let hearts = 5;
+    let currentStep = 0;
+
+    // --- Configuration Fond Unique ---
+    const UNIFIED_BG = "url('https://image.lexica.art/full_jpg/420c9d5e-44cd-4298-8f7c-1aa868b8d43f')";
+
+    // On applique ce fond unique à toutes les constantes
+    const DEFAULT_BG = UNIFIED_BG;
+    const TELEPHONE_BG = UNIFIED_BG;
+    const CANDY_BG = UNIFIED_BG;
+    const TEA_BG = UNIFIED_BG;
+    const NINE_ONE_ONE_BG = UNIFIED_BG;
+    const TRANSITION_BG = UNIFIED_BG;
+    const HESS_BG = UNIFIED_BG;
+    const RED_LADY_BG = UNIFIED_BG;
+    const SOCIAL_BG = UNIFIED_BG;
+    const MANICURE_BG = UNIFIED_BG;
+    const EYES_BG = UNIFIED_BG;
+    const DISEASE_BG = UNIFIED_BG;
+    const JUST_DANCE_BG = UNIFIED_BG;
+    const SPORT_BG = UNIFIED_BG;
+    const LOVE_BG = UNIFIED_BG;
+    const FATIGUE_BG = UNIFIED_BG;
+
+    const gameSteps = [
+        { text: "Gaga Holala ! Je suis le Docteur Gaga." },
+        { text: "Je suis caught in a Bad Romance !" },
+        {
+            text: "Comment tu t'appelles ? What's your name ? Are you Alejandro ? Es-tu Alexandre ?",
+            type: "input", placeholder: "Je m'appelle...",
+            action: (val) => { userName = val || "Alejandro"; nextStep(); }
+        },
+        {
+            text: () => `Oh, ${userName}... Don't call my name, but tell me: quel âge as-tu ? How old are you ?`,
+            type: "input", placeholder: "J'ai ... ans",
+            action: (val) => { nextStep(); }
+        },
+        {
+            text: "Oh, tu as l'air malade ! Are you sick ? Regarde-moi dans les yeux...",
+            choices: [
+                { text: "oui, je suis malade", correct: true, feedback: "My poor Little Monster! Je vais t'aider." },
+                { text: "je suiiiiis malaaaaadeeeeeeeeee", correct: true, feedback: "Quelle Diva ! Don't be a drag, just be a queen!" }
+            ]
+        },
+        {
+            bg: RED_LADY_BG,
+            text: "Oh, non ! Comme un poème dit par une femme en rouge, tu entends les derniers mots de ta vie !",
+        },
+        {
+            bg: RED_LADY_BG,
+            text: "Abracadabra !",
+        },
+        {
+            bg: TELEPHONE_BG,
+            text: "Oh non ! Mon téléphone sonne ! Stop calling, stop calling, I don't wanna talk anymore !",
+            choices: [
+                { text: "aide-moi, je suis malade !", correct: true, feedback: "D'accord, Honey B. Écoute le Docteur Gaga." },
+                { text: "j'aime cette chanson !", correct: true, feedback: "I know! C'est un tube !" }
+            ]
+        },
+        {
+            bg: NINE_ONE_ONE_BG,
+            text: "Il faut appeler les urgences ! En France, c'est quel numéro ?",
+            choices: [
+                { text: "le 911", correct: false, feedback: "Non ! 911 c'est aux USA ! En France c'est le 15." },
+                { text: "le 15", correct: true, feedback: "Oui ! Le 15 (SAMU). My biggest enemy is me let's pop a 15!" },
+                { text: "le 007", correct: false, feedback: "Non ! C'est James Bond !" }
+            ]
+        },
+        {
+            bg: TRANSITION_BG,
+            text: "Please, hold on! Je vais m'occuper de toi...",
+        },
+        {
+            bg: TRANSITION_BG,
+            text: "I can play the doctor I can cure your disease! Commençons l'examen.",
+            choices: [ { text: "oui, merci Docteur", correct: true, feedback: "Just dance, it'll be okay!" } ]
+        },
+        {
+            text: "Alors... tu es malade... Pourquoi tu es malade ?",
+            choices: [
+                { text: "pour je n'étudie pas assez le français", correct: false, feedback: "Non ! 'Pour' exprime le but." },
+                { text: "parce que je n'étudie pas assez le français", correct: true, feedback: "Exactement ! 'Parce que' explique la cause." },
+                { text: "quand je n'étudie pas assez le français", correct: false, feedback: "Non ! 'Quand' exprime le temps." }
+            ]
+        },
+        {
+            text: "Tu es malade, je dois te demander tes...",
+            choices: [
+                { text: "symptômes", correct: true, feedback: "Oui ! Ce que tu ressens (fièvre, toux...)." },
+                { text: "corps", correct: false, feedback: "Non, je vois déjà ton corps !" },
+                { text: "genoux", correct: false, feedback: "Non, pas seulement les genoux !" },
+                { text: "douleurs", correct: false, feedback: "C'est une partie des symptômes, mais le terme médical est 'symptômes'." }
+            ]
+        },
+        {
+            text: "Ah, il y a quelque chose que tu ne peux pas manger ? Un médicament que tu ne peux pas ? As-tu des...",
+            choices: [
+                { text: "allergies", correct: true, feedback: "Oui ! C'est très important." },
+                { text: "pommades", correct: false, feedback: "Non !" },
+                { text: "motivations", correct: false, feedback: "Non, mais il en faut pour apprendre le français !" },
+                { text: "pansements", correct: false, feedback: "Non !" }
+            ]
+        },
+        {
+            text: "Ah oui, des allergies ! Donc, tu as des allergies ?",
+            choices: [
+                { text: "oui, je n'ai pas d'allergies", correct: false, feedback: "Non ! C'est contradictoire." },
+                { text: "non, j'ai des allergies", correct: false, feedback: "Non ! C'est contradictoire." },
+                { text: "non, je n'ai pas d'allergies", correct: true, feedback: "Exactement ! Phrase négative correcte." }
+            ]
+        },
+        {
+            text: "Quel est ton poids ?",
+            choices: [
+                { text: "je mesure 65 kg", correct: false, feedback: "Non ! On utilise 'mesurer' pour la taille." },
+                { text: "je pèse 65 kg", correct: true, feedback: "Oui ! Je pèse 65 kg." },
+                { text: "je suis enrhumé", correct: false, feedback: "Non ! Ça c'est une maladie." }
+            ]
+        },
+        {
+            text: "Quelle est ta taille ?",
+            choices: [
+                { text: "je suis 80 kg", correct: false, feedback: "Non ! C'est le poids !" },
+                { text: "je mesure 1m80", correct: true, feedback: "Bravo ! Je mesure 1m80." },
+                { text: "j'ai de la toux", correct: false, feedback: "Non ! C'est un symptôme." }
+            ]
+        },
+        {
+            bg: SOCIAL_BG,
+            text: "Si tu es malade, il faut dire quoi ?",
+            choices: [
+                { text: "Sincères condoléances", correct: false, feedback: "Non ! C'est quand quelqu'un meurt !" },
+                { text: "Bon rétablissement", correct: true, feedback: "Bravo !" },
+                { text: "je vais câbler", correct: false, feedback: "C'est de l'argot pour 'devenir fou' !" }
+            ]
+        },
+        {
+            bg: SOCIAL_BG,
+            text: "Où vas-tu acheter des pansements ?",
+            choices: [
+                { text: "à la pharmacie", correct: true, feedback: "Bravo !" },
+                { text: "à la boulangerie", correct: false, feedback: "Non ! On y achète du pain !" },
+                { text: "à l'épicerie", correct: false, feedback: "Non !" }
+            ]
+        },
+        {
+            bg: SOCIAL_BG,
+            text: "Pour aller à la pharmacie, il faut...",
+            choices: [
+                { text: "une ordonnance", correct: true, feedback: "Oui ! C'est le papier du docteur." },
+                { text: "une angine", correct: false, feedback: "C'est une maladie, pas un objet !" },
+                { text: "une grève", correct: false, feedback: "Non ! Ça, c'est quand on arrête de travailler !" }
+            ]
+        },
+        {
+            text: "Question : Quand tu es malade, tu vas voir qui ?",
+            choices: [
+                { text: "un médecin", correct: true, feedback: "Oui !" },
+                { text: "un touriste", correct: false, feedback: "Non !" },
+                { text: "un vétérinaire", correct: false, feedback: "Non ! Pour les animaux !" }
+            ]
+        },
+        {
+            text: "Grammaire : Choisis le bon mot pour Gaga.",
+            choices: [ { text: "Je SUIS malade.", correct: true, feedback: "Bravo !" }, { text: "J'AI malade.", correct: false, feedback: "Non !" } ]
+        },
+        {
+            text: "Grammaire : Et pour la douleur ? Pain ?",
+            choices: [ { text: "J'AI mal au ventre.", correct: true, feedback: "Exactement !" }, { text: "Je SUIS mal au ventre.", correct: false, feedback: "Non !" } ]
+        },
+        {
+            text: "Tu n'as rien mangé ? Tu as...",
+            choices: [
+                { text: "la dalle", correct: true, feedback: "Bravo ! 'Avoir la dalle', c'est avoir très faim." },
+                { text: "la soif", correct: false, feedback: "Non, ça c'est pour l'eau !" },
+                { text: "le stress", correct: false, feedback: "Non !" }
+            ]
+        },
+        {
+            text: "Oh là là ! Tu as très chaud, ton front brûle. Tu as la...",
+            choices: [ { text: "grippe", correct: true, feedback: "Oui !" }, { text: "diarrhée", correct: false, feedback: "Non !" }, { text: "aspirine", correct: false, feedback: "Non !" } ]
+        },
+        {
+            bg: CANDY_BG,
+            text: "You ate too much so-sour candy ! Tu n'es pas Lisa de Blackpink !",
+        },
+        {
+            bg: CANDY_BG,
+            text: "Aïe aïe aïe ! Tu as mal aux...",
+            choices: [ { text: "dents", correct: true, feedback: "Oui ! Caries !" }, { text: "yeux", correct: false, feedback: "Non !" }, { text: "oreilles", correct: false, feedback: "Non !" } ]
+        },
+        {
+            text: "Tu n'es pas hot like Mexico, you are so cold ! Tu as...",
+            choices: [ { text: "froid", correct: true, feedback: "Oui ! Tu trembles !" }, { text: "stress", correct: false, feedback: "Non !" }, { text: "inquiet", correct: false, feedback: "Non !" } ]
+        },
+        {
+            text: "Si je veux connaître ta température, il me faut...",
+            choices: [
+                { text: "un thermomètre", correct: true, feedback: "Exact ! Pour mesurer la fièvre." },
+                { text: "un comprimé", correct: false, feedback: "Non !" },
+                { text: "une hanche", correct: false, feedback: "C'est une partie du corps ! " }
+            ]
+        },
+        {
+            bg: SPORT_BG,
+            text: "Danse pour Gaga ! ................ du sport !",
+            choices: [
+                { text: "fais", correct: true, feedback: "Bravo ! L'impératif de faire." },
+                { text: "faires", correct: false, feedback: "Non !" },
+                { text: "fait", correct: false, feedback: "Non, ça c'est 'il fait' !" },
+                { text: "faises", correct: false, feedback: "Ça n'existe pas !" }
+            ]
+        },
+        {
+            bg: JUST_DANCE_BG,
+            text: "Tu as trop dansé ! Just Dance, but not too much! Maintenant, tu as mal...",
+            choices: [
+                { text: "à la cheville", correct: true, feedback: "Oui ! C'est dur de danser en talons !" },
+                { text: "aux oreilles", correct: false, feedback: "Non !" },
+                { text: "aux cheveux", correct: false, feedback: "Mais non !" }
+            ]
+        },
+        {
+            bg: EYES_BG,
+            text: "Tu as mal aux yeux ? D'accord, prends des...",
+            choices: [
+                { text: "gouttes", correct: true, feedback: "Oui ! Des gouttes." },
+                { text: "dents", correct: false, feedback: "Non !" },
+                { text: "toux", correct: false, feedback: "Non !" }
+            ]
+        },
+        {
+            text: "Ta gorge est rouge. Tu as une...",
+            choices: [ { text: "angine", correct: true, feedback: "Oui !" }, { text: "toux", correct: false, feedback: "Non !" }, { text: "diarrhée", correct: false, feedback: "Non !" } ]
+        },
+        {
+            bg: DISEASE_BG,
+            text: "Prends un ... de paracétamol.",
+            choices: [
+                { text: "comprimé", correct: true, feedback: "Bravo !" },
+                { text: "sirop", correct: false, feedback: "Non !" },
+                { text: "médicament", correct: false, feedback: "Non !" }
+            ]
+        },
+        {
+            bg: NINE_ONE_ONE_BG,
+            text: "Et si on allait tous les deux à l'hôpital ?",
+            choices: [
+                { text: "Oui, on y va !", correct: true, feedback: "Allons-y !" },
+                { text: "Oui, on y allons !", correct: false, feedback: "Non ! Avec 'on', c'est comme 'il/elle' : on va." },
+                { text: "Oui, on y aller !", correct: false, feedback: "Non ! Il faut conjuguer le verbe." }
+            ]
+        },
+        {
+            bg: DISEASE_BG,
+            text: "Non, on n'y va pas, je suis le docteur !",
+        },
+        {
+            bg: LOVE_BG,
+            text: "I can't get enough of your love drug ! Je veux ton médicament d'amour ! Prends mon médicament d'amour....",
+            choices: [
+                { text: "trois fois par jour", correct: true, feedback: "Oui ! Matin, midi et soir." },
+                { text: "trois jour fois par", correct: false, feedback: "L'ordre des mots est incorrect." },
+                { text: "trois jour par fois", correct: false, feedback: "Non !" },
+                { text: "par fois trois jours", correct: false, feedback: "Non !" }
+            ]
+        },
+        {
+            bg: HESS_BG,
+            text: "Running out of medicine??? Oh, mon pauvre !",
+            choices: [
+                { text: "oui, c'est la hess!", correct: true, feedback: "Exact !" },
+                { text: "oui, je suis en colère", correct: false, feedback: "Non !" },
+                { text: "je ne suis pas pauvre", correct: false, feedback: "C'est une expression !" }
+            ]
+        },
+        {
+            text: "Grammaire : Complète la phrase.",
+            choices: [ { text: "J'ai mal AU ventre.", correct: true, feedback: "Bravo !" }, { text: "J'ai mal À LA ventre.", correct: false, feedback: "Non !" } ]
+        },
+        {
+            text: "Grammaire : Complète la phrase.",
+            choices: [ { text: "J'ai mal À LA gorge.", correct: true, feedback: "Perfect!" }, { text: "J'ai mal AU gorge.", correct: false, feedback: "Non !" } ]
+        },
+        {
+            text: "Attention à la voyelle !",
+            choices: [ { text: "J'ai mal À L' oreille.", correct: true, feedback: "Bravo !" }, { text: "J'ai mal AU oreille.", correct: false, feedback: "Non !" } ]
+        },
+        {
+            bg: TEA_BG,
+            text: "Vite, tu as besoin de boire de l'eau ! Tu as...",
+            choices: [ { text: "soif", correct: true, feedback: "Oui !" }, { text: "faim", correct: false, feedback: "Non !" }, { text: "peur", correct: false, feedback: "Non !" } ]
+        },
+        {
+            bg: FATIGUE_BG,
+            text: "Tu es fatigué, mon pauvre.....",
+            choices: [
+                { text: "repose-toi", correct: true, feedback: "Oui ! Verbe pronominal à l'impératif." },
+                { text: "te repose !", correct: false, feedback: "Non !" },
+                { text: "reposer-toi", correct: false, feedback: "Non !" },
+                { text: "t'repose", correct: false, feedback: "Non !" }
+            ]
+        },
+        {
+            text: "Dernière étape : Tu dois rester au lit et te...",
+            choices: [ { text: "reposer", correct: true, feedback: "Dors bien !" }, { text: "danser", correct: false, feedback: "Pas maintenant !" }, { text: "travailler", correct: false, feedback: "Non !" } ]
+        }
+    ];
+
+    async function callGemini(endpoint, payload) {
+        let delay = 1000;
+        for (let i = 0; i < 5; i++) {
+            try {
+                const response = await fetch(`${endpoint}?key=${apiKey}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                if (!response.ok) throw new Error('API Error');
+                return await response.json();
+            } catch (err) { if (i === 4) throw err; await new Promise(r => setTimeout(r, delay)); delay *= 2; }
+        }
+    }
+
+    async function explainErrorAI(questionText, wrongAnswerText) {
+        const feedbackContainer = document.getElementById('ai-feedback-container');
+        if (!feedbackContainer) return;
+
+        // Afficher indicateur de chargement
+        feedbackContainer.innerHTML = '<div class="typing-indicator"><span></span><span></span><span></span></div>';
+        
+        const systemPrompt = "Tu es Lady Gaga, professeur de français excentrique pour étudiants thaïlandais niveau A1. L'étudiant a fait une erreur. Explique l'erreur de façon TRÈS COURTE et SIMPLE (max 2 phrases). Utilise UNIQUEMENT le Français. Ton ton doit être encourageant ('Paws up!', 'Little Monster'). IMPORTANT : Réponds uniquement avec du code HTML simple (utilise <b> pour le gras, <br> pour les sauts de ligne). N'utilise pas de Markdown.";
+        
+        const payload = { 
+            contents: [{ parts: [{ text: `Question: "${questionText}"\nRéponse fausse de l'étudiant: "${wrongAnswerText}"\nExplique l'erreur et donne la bonne réponse en français A1.` }] }], 
+            systemInstruction: { parts: [{ text: systemPrompt }] } 
+        };
+
+        try {
+            const data = await callGemini(`https://generativelanguage.googleapis.com/v1beta/models/${GEN_MODEL}:generateContent`, payload);
+            let explanation = data.candidates[0].content.parts[0].text;
+            // Nettoyage au cas où l'IA mettrait quand même du markdown code block
+            explanation = explanation.replace(/```html/g, '').replace(/```/g, '');
+            feedbackContainer.innerHTML = `<div class="ai-explanation"><strong>👩🏼‍🎤 Gaga Teacher :</strong><br>${explanation}</div>`;
+        } catch (err) { 
+            feedbackContainer.innerHTML = `<div class="text-sm text-red-500 italic mt-2">Désolée, mon micro ne marche pas (Erreur IA).</div>`;
+        }
+    }
+
+    function startGame() { 
+        const intro = document.getElementById('screen-intro');
+        intro.classList.remove('active');
+        intro.classList.add('hidden');
+        document.getElementById('game-content').classList.remove('hidden'); 
+        document.getElementById('ui-layer').classList.remove('hidden'); 
+        updateBackground(DEFAULT_BG);
+        renderStep(); 
+    }
+    function updateBackground(url) { document.getElementById('mainContainer').style.backgroundImage = `${url}`; }
+    function shuffle(array) { for (let i = array.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [array[i], array[j]] = [array[j], array[i]]; } return array; }
+
+    function renderStep() {
+        const step = gameSteps[currentStep];
+        const textElement = document.getElementById('dialogueText');
+        const choicesContainer = document.getElementById('choicesContainer');
+        if (step.bg) updateBackground(step.bg); else if (currentStep > 0 && gameSteps[currentStep-1].bg) updateBackground(DEFAULT_BG);
+        document.getElementById('progressBar').style.width = ((currentStep / gameSteps.length) * 100) + "%";
+        choicesContainer.innerHTML = "";
+        
+        // Nettoyage des balises HTML pour le texte affiché
+        textElement.innerHTML = typeof step.text === 'function' ? step.text() : step.text;
+        
+        if (step.type === "input") {
+            const input = document.createElement('input'); input.className = "input-name"; input.placeholder = step.placeholder; input.id = "nameInput"; choicesContainer.appendChild(input);
+            const btn = document.createElement('button'); btn.className = "choice-btn text-center bg-pink-100"; btn.innerText = "Valider";
+            btn.onclick = () => { if(input.value.trim()) step.action(input.value); }; choicesContainer.appendChild(btn); input.focus();
+        } else if (step.choices) {
+            const shuffledChoices = shuffle([...step.choices]);
+            shuffledChoices.forEach(choice => {
+                const btn = document.createElement('button'); btn.className = "choice-btn"; btn.innerHTML = choice.text; btn.onclick = () => handleChoice(choice, step.text); choicesContainer.appendChild(btn);
+            });
+        } else {
+            const nextBtn = document.createElement('button'); nextBtn.className = "next-btn"; nextBtn.innerText = "Suivant ➔"; nextBtn.onclick = nextStep; choicesContainer.appendChild(nextBtn);
+        }
+    }
+
+    function handleChoice(choice, questionText) {
+        const container = document.getElementById('choicesContainer');
+        // Vider les boutons pour afficher le feedback
+        container.innerHTML = '';
+        
+        if (choice.correct) {
+            container.innerHTML = `<div class="p-3 bg-green-100 border-2 border-green-500 rounded-xl text-green-700 font-bold mb-3 text-sm">✨ ${choice.feedback}</div>`;
+            const nextBtn = document.createElement('button'); nextBtn.className = "next-btn"; nextBtn.innerText = "Continuer ➔"; nextBtn.onclick = nextStep; container.appendChild(nextBtn);
+        } else {
+            hearts--; document.getElementById('heartsDisplay').innerText = "❤️".repeat(hearts) + "🖤".repeat(5 - hearts);
+            if (hearts <= 0) { 
+                document.getElementById('game-content').classList.add('hidden'); 
+                document.getElementById('screen-lose').classList.remove('hidden'); 
+                document.getElementById('screen-lose').classList.add('active'); // Add active to ensure flex display
+                updateBackground(UNIFIED_BG);
+            } else {
+                const feedbackWrapper = document.createElement('div');
+                feedbackWrapper.innerHTML = `<div class="p-3 bg-red-100 border-2 border-red-500 rounded-xl text-red-700 font-bold mb-3 text-sm">❌ ${choice.feedback}</div><div id="ai-feedback-container"></div>`;
+                container.appendChild(feedbackWrapper);
+                
+                const cleanQuestion = typeof questionText === 'string' ? questionText.replace(/<[^>]*>?/gm, '') : "Question contextuelle";
+                explainErrorAI(cleanQuestion, choice.text);
+
+                const retryBtn = document.createElement('button'); retryBtn.className = "next-btn"; retryBtn.innerText = "Réessayer ↻"; retryBtn.onclick = renderStep; container.appendChild(retryBtn);
+            }
+        }
+    }
+
+    function nextStep() { 
+        currentStep++; 
+        if (currentStep >= gameSteps.length) { 
+            document.getElementById('game-content').classList.add('hidden'); 
+            document.getElementById('screen-win').classList.remove('hidden'); 
+            document.getElementById('screen-win').classList.add('active'); // Add active for win screen too
+        } else {
+            renderStep(); 
+        }
+    }
+</script>
+</body>
+</html>
